@@ -7,7 +7,7 @@ on:
     branches: [ "main", "master" ]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: windows-latest
 
     steps:
@@ -17,11 +17,11 @@ jobs:
     - name: Konfiguracja MSBuild
       uses: microsoft/setup-msbuild@v2
 
-    - name: Przywracanie zależności
+    - name: Przywracanie pakietów NuGet
       run: dotnet restore InvestmentPortfolio.sln
 
     - name: Budowanie rozwiązania (Release)
       run: msbuild InvestmentPortfolio.sln /p:Configuration=Release /p:Platform="Any CPU" /m
 
-    # Obecnie repozytorium nie zawiera projektu testowego.
-    # Po jego dodaniu można tutaj dodać krok dotnet test.
+    - name: Uruchamianie testów jednostkowych
+      run: dotnet test InvestmentPortfolio.Tests/InvestmentPortfolio.Tests.csproj --no-build --configuration Release --verbosity normal
