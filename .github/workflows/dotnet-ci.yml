@@ -18,10 +18,10 @@ jobs:
       uses: microsoft/setup-msbuild@v2
 
     - name: Przywracanie zależności
-      run: dotnet restore InvestmentPortfolio.csproj
+      run: dotnet restore InvestmentPortfolio.sln
 
-    - name: Budowanie projektu (Release)
-      run: msbuild InvestmentPortfolio.csproj /p:Configuration=Release /p:Platform="Any CPU" /m
+    - name: Budowanie rozwiązania (Release)
+      run: msbuild InvestmentPortfolio.sln /p:Configuration=Release /p:Platform="Any CPU" /m
 
-    # Repozytorium nie zawiera jeszcze projektu testowego.
-    # Gdy zostaną dodane testy, można dodać osobny krok dotnet test.
+    # Obecnie repozytorium nie zawiera projektu testowego.
+    # Po jego dodaniu można tutaj dodać krok dotnet test.
