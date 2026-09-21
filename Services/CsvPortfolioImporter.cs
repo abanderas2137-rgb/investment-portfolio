@@ -23,7 +23,7 @@ namespace InvestmentPortfolio.Services
    } return result;
   }
   private static string[] Parse(string line,char d){var r=new List<string>();var sb=new StringBuilder();bool q=false;foreach(char ch in line){if(ch=='"'){q=!q;continue;}if(ch==d&&!q){r.Add(sb.ToString());sb.Clear();}else sb.Append(ch);}r.Add(sb.ToString());return r.ToArray();}
-  private static decimal ParseDecimal(string s){decimal v;return decimal.TryParse(s.Replace(" ","").Replace(",", "."),NumberStyles.Any,CultureInfo.InvariantCulture,out v)?v:0;}
+  private static decimal ParseDecimal(string s){decimal v;if(decimal.TryParse(s,NumberStyles.Number,CultureInfo.GetCultureInfo("pl-PL"),out v))return v;if(decimal.TryParse(s.Replace(" ","").Replace(",","."),NumberStyles.Any,CultureInfo.InvariantCulture,out v))return v;return 0;}
   private static DateTime ParseDate(string s){DateTime d;if(DateTime.TryParse(s,CultureInfo.GetCultureInfo("pl-PL"),DateTimeStyles.None,out d)||DateTime.TryParse(s,out d))return d;throw new InvalidDataException("Nieprawidłowa data: "+s);}
   private static InvestmentType ParseType(string s){var x=s.ToLowerInvariant();if(x.Contains("akcj"))return InvestmentType.Stock;if(x.Contains("oblig"))return InvestmentType.Bond;if(x.Contains("etf"))return InvestmentType.ETF;if(x.Contains("krypto"))return InvestmentType.Cryptocurrency;if(x.Contains("fundusz")||x.Contains("fund"))return InvestmentType.Fund;if(x.Contains("lokat"))return InvestmentType.Deposit;return InvestmentType.Other;}
  }
