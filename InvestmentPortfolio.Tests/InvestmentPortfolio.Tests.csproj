@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net471</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\InvestmentPortfolio.csproj" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.8.4" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.8.4" />
+  </ItemGroup>
+</Project>
