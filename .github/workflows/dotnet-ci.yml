@@ -1,6 +1,5 @@
-name: .NET Core CI
+name: .NET Framework 4.7.1 CI
 
-# Skrypt uruchamia się automatycznie przy pushu na dowolną gałąź oraz przy Pull Requestach do głównej gałęzi
 on:
   push:
     branches: [ "**" ]
@@ -8,23 +7,21 @@ on:
     branches: [ "main", "master" ]
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: windows-latest
 
     steps:
     - name: Klonowanie kodu
       uses: actions/checkout@v4
 
-    - name: Konfiguracja .NET SDK
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
+    - name: Konfiguracja MSBuild
+      uses: microsoft/setup-msbuild@v2
 
-    - name: Przywracanie pakietów NuGet
-      run: dotnet restore
+    - name: Przywracanie zależności
+      run: dotnet restore InvestmentPortfolio.csproj
 
-    - name: Budowanie projektu (Build)
-      run: dotnet build --no-restore --configuration Release
+    - name: Budowanie projektu (Release)
+      run: msbuild InvestmentPortfolio.csproj /p:Configuration=Release /p:Platform="Any CPU" /m
 
-    - name: Uruchamianie testów (Test)
-      run: dotnet test --no-build --configuration Release --verbosity normal
+    # Repozytorium nie zawiera jeszcze projektu testowego.
+    # Gdy zostaną dodane testy, można dodać osobny krok dotnet test.
