@@ -1,0 +1,30 @@
+name: .NET Core CI
+
+# Skrypt uruchamia się automatycznie przy pushu na dowolną gałąź oraz przy Pull Requestach do głównej gałęzi
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Klonowanie kodu
+      uses: actions/checkout@v4
+
+    - name: Konfiguracja .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Przywracanie pakietów NuGet
+      run: dotnet restore
+
+    - name: Budowanie projektu (Build)
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Uruchamianie testów (Test)
+      run: dotnet test --no-build --configuration Release --verbosity normal
