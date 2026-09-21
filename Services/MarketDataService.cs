@@ -16,10 +16,7 @@ namespace InvestmentPortfolio.Services
   private static HttpClientHandler CreateHandler()
   {
    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-   return new HttpClientHandler
-   {
-    AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-   };
+   return new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate };
   }
 
   private static HttpClient CreateClient()
@@ -35,9 +32,29 @@ namespace InvestmentPortfolio.Services
   {
    if(string.IsNullOrWhiteSpace(symbol)) return null;
 
-   var normalizedSymbol = NormalizeSymbol(symbol);
+   var requested = symbol.Trim();
+   var candidates = new System.Collections.Generic.List<string> { requested.ToUpperInvariant() };
+
+   // Dla krótkich tickerów bez sufiksu próbujemy również wariantu GPW (.WA).
+   if(!requested.Contains(".") && !requested.Contains("=") && requested.Length <= 6)
+    candidates.Add(requested.ToUpperInvariant() + ".WA");
+
+   Exception lastError = null;
+   foreach(var candidate in candidates)
+   {
+    try { return await GetQuoteForSymbolAsync(requested, candidate).ConfigureAwait(false); }
+    catch(Exception ex) { lastError = ex; }
+   }
+
+   throw new InvalidOperationException(
+    "Nie udało się pobrać notowania '" + requested + "'. " +
+    (lastError == null ? "Brak odpowiedzi z Yahoo Finance." : lastError.Message), lastError);
+  }
+
+  private static async Task<MarketQuote> GetQuoteForSymbolAsync(string originalSymbol, string yahooSymbol)
+  {
    var url = "https://query1.finance.yahoo.com/v8/finance/chart/" +
-             Uri.EscapeDataString(normalizedSymbol) + "?range=1d&interval=1d";
+             Uri.EscapeDataString(yahooSymbol) + "?range=1d&interval=1d";
 
    try
    {
@@ -47,23 +64,21 @@ namespace InvestmentPortfolio.Services
 
      if(!response.IsSuccessStatusCode)
       throw new InvalidOperationException("Yahoo Finance HTTP " + (int)response.StatusCode +
-       " (" + response.ReasonPhrase + ") dla symbolu " + normalizedSymbol + ".");
+       " (" + response.ReasonPhrase + ") dla symbolu " + yahooSymbol + ".");
 
      if(json.IndexOf("\"result\":null", StringComparison.OrdinalIgnoreCase) >= 0)
-      throw new InvalidOperationException("Yahoo Finance nie znalazł symbolu " + normalizedSymbol + ".");
+      throw new InvalidOperationException("Yahoo Finance nie znalazł symbolu " + yahooSymbol + ".");
 
      var price = ExtractDecimal(json, "regularMarketPrice");
-     if(price == null)
-      price = ExtractDecimal(json, @"""close"":\[([0-9.\-]+)");
+     if(price == null) price = ExtractDecimal(json, @"""close"":\[([0-9.\-]+)");
 
      if(price == null)
-      throw new InvalidOperationException("Yahoo Finance nie zwrócił ceny dla symbolu " + normalizedSymbol + ".");
+      throw new InvalidOperationException("Yahoo Finance nie zwrócił ceny dla symbolu " + yahooSymbol + ".");
 
      var ts = ExtractLong(json, "regularMarketTime");
-
      return new MarketQuote
      {
-      Symbol = symbol.Trim(),
+      Symbol = originalSymbol,
       Price = price.Value,
       Timestamp = ts.HasValue ? DateTimeOffset.FromUnixTimeSeconds(ts.Value).LocalDateTime : DateTime.Now,
       Source = "Yahoo Finance"
@@ -72,28 +87,20 @@ namespace InvestmentPortfolio.Services
    }
    catch(HttpRequestException ex)
    {
-    throw new InvalidOperationException("Błąd HTTP podczas pobierania " + normalizedSymbol + ": " + ex.Message, ex);
+    throw new InvalidOperationException("Błąd HTTP podczas pobierania " + yahooSymbol + ": " + ex.Message, ex);
    }
    catch(TaskCanceledException ex)
    {
-    throw new InvalidOperationException("Przekroczono limit czasu podczas pobierania " + normalizedSymbol + ".", ex);
+    throw new InvalidOperationException("Przekroczono limit czasu podczas pobierania " + yahooSymbol + ".", ex);
    }
-  }
-
-  private static string NormalizeSymbol(string symbol)
-  {
-   var s = symbol.Trim().ToUpperInvariant();
-   if(!s.Contains(".") && !s.Contains("=") && s.Length <= 6)
-    return s + ".WA";
-   return s;
   }
 
   private static decimal? ExtractDecimal(string json, string key)
   {
    var m = Regex.Match(json, key + @"[^0-9-]*(-?[0-9]+(?:\.[0-9]+)?)");
    decimal v;
-   return m.Success && decimal.TryParse(m.Groups[1].Value, NumberStyles.Any,
-    CultureInfo.InvariantCulture, out v) ? (decimal?)v : null;
+   return m.Success && decimal.TryParse(m.Groups[1].Value, NumberStyles.Any, CultureInfo.InvariantCulture, out v)
+    ? (decimal?)v : null;
   }
 
   private static long? ExtractLong(string json, string key)
