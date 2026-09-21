@@ -42,23 +42,23 @@ namespace InvestmentPortfolio
 
   private async Task RefreshMarketDataAsync()
   {
-   bool online=true;DateTime? latestCache=null;
+   bool online=true;DateTime? latestCache=null;string lastMarketError=null;
    foreach(var inv in _portfolio.Investments.Where(x=>x.IsMarketPriced&&!string.IsNullOrWhiteSpace(x.Ticker)))
    {
     try{var q=await _market.GetQuoteAsync(inv.Ticker);inv.CurrentPrice=q.Price;inv.LastPriceTimestamp=q.Timestamp;inv.PriceSource=q.Source;_cache.Put(q);}
-    catch{online=false;var q=_cache.Get(inv.Ticker);if(q!=null){inv.CurrentPrice=q.Price;inv.LastPriceTimestamp=q.Timestamp;inv.PriceSource=q.Source;latestCache=latestCache.HasValue&&latestCache.Value>q.Timestamp?latestCache:q.Timestamp;}}
+    catch(Exception ex){online=false;lastMarketError=ex.Message;var q=_cache.Get(inv.Ticker);if(q!=null){inv.CurrentPrice=q.Price;inv.LastPriceTimestamp=q.Timestamp;inv.PriceSource=q.Source;latestCache=latestCache.HasValue&&latestCache.Value>q.Timestamp?latestCache:q.Timestamp;}}
    }
    foreach(var c in _portfolio.Investments.Select(x=>x.Currency).Distinct(StringComparer.OrdinalIgnoreCase))
    {
     if(string.Equals(c,"PLN",StringComparison.OrdinalIgnoreCase))continue;
     try{var q=await _market.GetQuoteAsync(c+"PLN=X");_fx[c]=q.Price;_cache.Put(q);}
-    catch{online=false;var q=_cache.Get(c+"PLN=X");if(q!=null){_fx[c]=q.Price;latestCache=latestCache.HasValue&&latestCache.Value>q.Timestamp?latestCache:q.Timestamp;}}
+    catch(Exception ex){online=false;lastMarketError=ex.Message;var q=_cache.Get(c+"PLN=X");if(q!=null){_fx[c]=q.Price;latestCache=latestCache.HasValue&&latestCache.Value>q.Timestamp?latestCache:q.Timestamp;}}
    }
    _storage.Save(_portfolio.Investments);
    var value=CurrentValuePln();_portfolio.Snapshots.Add(new PortfolioSnapshot{Timestamp=DateTime.Now,ValuePln=value,NetDepositsPln=_analytics.NetDeposits(_portfolio.Transactions)});
    while(_portfolio.Snapshots.Count>2000)_portfolio.Snapshots.RemoveAt(0);
    _snapshotStorage.Save(_portfolio.Snapshots);
-   if(!online){if(!latestCache.HasValue)latestCache=_portfolio.Investments.Where(x=>x.LastPriceTimestamp.HasValue).Select(x=>x.LastPriceTimestamp.Value).OrderByDescending(x=>x).FirstOrDefault();ConnectionText.Text=latestCache.HasValue&&latestCache.Value!=default(DateTime)?"Brak połączenia z internetem. Ostatnie dane z "+latestCache.Value.ToString("dd.MM.yyyy HH:mm"):"Brak połączenia z internetem. Brak danych w pamięci podręcznej.";ConnectionBanner.Visibility=Visibility.Visible;}
+   if(!online){if(!latestCache.HasValue)latestCache=_portfolio.Investments.Where(x=>x.LastPriceTimestamp.HasValue).Select(x=>x.LastPriceTimestamp.Value).OrderByDescending(x=>x).FirstOrDefault();ConnectionText.Text=latestCache.HasValue&&latestCache.Value!=default(DateTime)?"Brak aktualnych danych z internetu. Ostatnie dane z "+latestCache.Value.ToString("dd.MM.yyyy HH:mm"):(string.IsNullOrWhiteSpace(lastMarketError)?"Brak danych rynkowych.":"Błąd pobierania danych: "+lastMarketError);ConnectionBanner.Visibility=Visibility.Visible;}
    else ConnectionBanner.Visibility=Visibility.Collapsed;
    Refresh();
   }
