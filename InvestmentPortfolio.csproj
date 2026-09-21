@@ -7,4 +7,15 @@
     <AssemblyName>InvestmentPortfolio</AssemblyName>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="InvestmentPortfolio.Tests\**\*.cs" />
+    <EmbeddedResource Remove="InvestmentPortfolio.Tests\**\*" />
+    <None Remove="InvestmentPortfolio.Tests\**\*" />
+    <Page Remove="InvestmentPortfolio.Tests\**\*.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
 </Project>
