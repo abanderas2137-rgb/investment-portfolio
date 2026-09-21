@@ -28,11 +28,11 @@ namespace InvestmentPortfolio
   public MainWindow()
   {
    InitializeComponent();
-   var dir=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"InvestmentPortfolio");
-   _storage=new PortfolioStorage(Path.Combine(dir,"portfolio.xml"));
-   _transactionStorage=new TransactionStorage(Path.Combine(dir,"transactions.xml"));
-   _snapshotStorage=new SnapshotStorage(Path.Combine(dir,"snapshots.xml"));
-   _cache=new MarketDataCache(Path.Combine(dir,"market-cache.xml"));
+   var dir=System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"InvestmentPortfolio");
+   _storage=new PortfolioStorage(System.IO.Path.Combine(dir,"portfolio.xml"));
+   _transactionStorage=new TransactionStorage(System.IO.Path.Combine(dir,"transactions.xml"));
+   _snapshotStorage=new SnapshotStorage(System.IO.Path.Combine(dir,"snapshots.xml"));
+   _cache=new MarketDataCache(System.IO.Path.Combine(dir,"market-cache.xml"));
    foreach(var x in _storage.Load())_portfolio.Investments.Add(x);
    foreach(var x in _transactionStorage.Load())_portfolio.Transactions.Add(x);
    foreach(var x in _snapshotStorage.Load())_portfolio.Snapshots.Add(x);
